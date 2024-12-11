@@ -392,6 +392,148 @@ Resultado Esperado:
 
 * As threads podem usar os métodos wait(), notify(), e notifyAll() para sincronizar sua execução e comunicação entre threads. Usados geralmente em blocos sincronizados para controle de concorrência.
 
+Os métodos wait(), notify() e notifyAll() são usados para controlar a execução de threads e para permitir que elas se comuniquem entre si. Eles são frequentemente usados em cenários de sincronização, onde é necessário controlar o acesso a recursos compartilhados ou coordenar as ações de múltiplas threads.
+
+Conceito e Funcionamento:
+wait(): Faz com que a thread que o chama libere o monitor (bloqueio) e entre em um estado de espera até que seja notificada.
+
+notify(): Desbloqueia uma thread que está em espera (chamada por wait()) e a acorda para que ela possa continuar sua execução.
+
+notifyAll(): Desbloqueia todas as threads que estão esperando (em wait()) no mesmo objeto monitor.
+
+Esses métodos são usados dentro de blocos sincronizados (com synchronized) para garantir que apenas uma thread tenha acesso ao código crítico de cada vez.
+
+Analogia no Mundo Real:
+Imagine um restaurante com uma cozinha (onde as "threads" são os cozinheiros e o "chefe de cozinha" é o monitor).
+
+* Cozinheiros esperando (wait()): Alguns cozinheiros precisam esperar que o chefe de cozinha dê permissão para começar a preparar os pratos. Eles ficam de mãos vazias até que o chefe libere a próxima tarefa.
+
+* Chefe notificando um cozinheiro (notify()): O chefe de cozinha decide que um cozinheiro pode começar a preparar um prato, então ele o chama e o libera para continuar o trabalho.
+
+* Chefe notificando todos os cozinheiros (notifyAll()): O chefe de cozinha decide que todos os cozinheiros podem começar a trabalhar, então ele chama todos de uma vez para que cada um comece suas tarefas.
+
+Esses métodos permitem que os cozinheiros (threads) sincronizem suas atividades e sejam notificados quando podem começar ou continuar a trabalhar.
+
+
+### Exemplo 
+
+```js 
+public class WaitNotifyExample {
+
+    private static class SharedQueue {
+        private int item;
+        private boolean hasItem = false;
+
+        // Método produtor que coloca um item na fila
+        public synchronized void produce(int item) throws InterruptedException {
+            while (hasItem) {
+                wait(); // Espera até que o item seja consumido
+            }
+            this.item = item;
+            hasItem = true;
+            System.out.println("Produto produzido: " + item);
+            notify(); // Notifica a thread consumidora que há um item disponível
+        }
+
+        // Método consumidor que retira um item da fila
+        public synchronized void consume() throws InterruptedException {
+            while (!hasItem) {
+                wait(); // Espera até que um item esteja disponível
+            }
+            System.out.println("Produto consumido: " + item);
+            hasItem = false;
+            notify(); // Notifica a thread produtora que o item foi consumido
+        }
+    }
+
+    public static void main(String[] args) throws InterruptedException {
+        SharedQueue queue = new SharedQueue();
+
+        // Thread produtora
+        Thread producer = new Thread(() -> {
+            try {
+                for (int i = 1; i <= 5; i++) {
+                    queue.produce(i);
+                    Thread.sleep(1000); // Simula algum tempo de produção
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        // Thread consumidora
+        Thread consumer = new Thread(() -> {
+            try {
+                for (int i = 1; i <= 5; i++) {
+                    queue.consume();
+                    Thread.sleep(2000); // Simula algum tempo de consumo
+                }
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        });
+
+        // Inicia as threads
+        producer.start();
+        consumer.start();
+
+        producer.join();
+        consumer.join();
+    }
+}
+
+```
+
+SharedQueue: Temos uma fila compartilhada entre o produtor e o consumidor. O produtor coloca itens na fila e o consumidor retira os itens dela.
+
+produce():
+
+O método produce() espera (chama wait()) se o item já foi colocado na fila, garantindo que o produtor não coloque novos itens até que o consumidor retire um item.
+Quando o produtor coloca um item, ele chama notify() para acordar a thread consumidora e indicar que há um item disponível.
+consume():
+
+O método consume() espera (chama wait()) se não há itens na fila, garantindo que o consumidor não tente consumir algo que não existe.
+Quando o consumidor consome um item, ele chama notify() para acordar o produtor e indicar que o item foi consumido e que a fila está livre para mais produções.
+Fluxo de execução:
+O produtor começa a produção e coloca um item na fila.
+A consumidora, ao detectar que há um item, consome e processa o item.
+O ciclo continua até que todos os itens sejam produzidos e consumidos.
+
+### Resultado 
+
+```js
+Produto produzido: 1
+Produto consumido: 1
+Produto produzido: 2
+Produto consumido: 2
+Produto produzido: 3
+Produto consumido: 3
+Produto produzido: 4
+Produto consumido: 4
+Produto produzido: 5
+Produto consumido: 5
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### Executando Tarefas com CompletableFuture:
 
 * CompletableFuture permite realizar tarefas assíncronas e combiná-las de maneira mais flexível. Ideal para quando você precisa realizar várias operações de forma não bloqueante.
